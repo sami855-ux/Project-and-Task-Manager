@@ -98,11 +98,15 @@
   --ring: #60a5fa; /* blue-400 outline */
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
+
+@layer utilities {
+  .font-geist {
+    font-family: var(--font-geist);
   }
-  body {
-    @apply bg-background text-foreground font-geist;
+  .font-mozilla {
+    font-family: var(--font-mozilla);
+  }
+  .font-jakarta {
+    font-family: var(--font-jakarta);
   }
 }
