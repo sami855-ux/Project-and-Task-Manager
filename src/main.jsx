@@ -9,6 +9,7 @@ import Dashboard from './components/Dashboard'
 import { RouterProvider } from 'react-router'
 import CalendarPage from './components/Calander'
 import AppLayout from './components/AppLayout'
+import ProjectsPage from './components/Project/ProjectPage'
 
 
 const router = createBrowserRouter([
@@ -23,7 +24,11 @@ const router = createBrowserRouter([
     {
     path: "/calendar",
     element: <CalendarPage/>
-    }
+    },
+{
+  path:"/projects",
+  element: <ProjectsPage/>
+}
     ]
   }
   

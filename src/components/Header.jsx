@@ -61,7 +61,7 @@ const Header = () => {
                 <Button
                   key={item}
                   variant="primary"
-                  className="text-base cursor-pointer font-medium text-muted-foreground  px-2 mx-2 font-jakarta"
+                  className="text-[15px] cursor-pointer text-muted-foreground  px-2 mx-1 font-geist"
                   >
                   {item}
                 </Button>
