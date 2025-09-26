@@ -10,6 +10,7 @@ import { RouterProvider } from 'react-router'
 import CalendarPage from './components/Calander'
 import AppLayout from './components/AppLayout'
 import ProjectsPage from './components/Project/ProjectPage'
+import ProjectDetailsPage from './components/Project/ProjectDetail'
 
 
 const router = createBrowserRouter([
@@ -28,6 +29,10 @@ const router = createBrowserRouter([
 {
   path:"/projects",
   element: <ProjectsPage/>
+}, 
+{
+  path: "/project/deatil/:id",
+  element: <ProjectDetailsPage/>
 }
     ]
   }

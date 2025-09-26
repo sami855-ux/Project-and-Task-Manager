@@ -26,6 +26,7 @@ import {
   SortAsc,
   Tag
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 // Mock project data
 const initialProjects = [
@@ -300,6 +301,8 @@ const ProjectsPage = () => {
             <TooltipContent className={"font-geist"}>{project.pinned ? "Unpin project" : "Pin project"}</TooltipContent>
           </Tooltip>
 
+        <Link to="/project/deatil/1">
+
           <Tooltip>
             <TooltipTrigger>
               <Button variant="ghost" size="sm">
@@ -308,7 +311,7 @@ const ProjectsPage = () => {
             </TooltipTrigger>
             <TooltipContent className={"font-geist"}>View project folder/details</TooltipContent>
           </Tooltip>
-
+        </Link>
           <Tooltip>
             <TooltipTrigger>
               <Button variant="ghost" size="sm" onClick={() => markAsCompleted(project.id)} disabled={project.status === "completed"}>
