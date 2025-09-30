@@ -93,14 +93,42 @@ export const AuthContextProvider = ({ children }) => {
     return { success: true, data };
   };
 
+  //Save the username if the user logged in with OAuth or provider
+  const saveOAuthMetadata = async (user) => {
+    const defaultUsername =
+      user.user_metadata.username ||
+      user.user_metadata.full_name ||
+      user.user_metadata.user_name ||
+      user.email.split("@")[0];
+
+    const defaultAvatar =
+      user.user_metadata.avatar_url ||
+      "https://ui-avatars.com/api/?name=" + encodeURIComponent(defaultUsername);
+
+    const { data, error } = await supabase.auth.updateUser({
+      data: {
+        username: defaultUsername,
+        avatar: defaultAvatar,
+      },
+    });
+
+    if (error) {
+      console.error("Error setting metadata:", error.message);
+    }
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
         setSession(session);
+
+        if (session?.user) {
+          await saveOAuthMetadata(session.user);
+        }
       }
     );
 
