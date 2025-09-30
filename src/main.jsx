@@ -10,14 +10,29 @@ import CalendarPage from "./components/Calander";
 import AppLayout from "./components/AppLayout";
 import ProjectsPage from "./components/Project/ProjectPage";
 import ProjectDetailsPage from "./components/Project/ProjectDetail";
+import RegisterForm from "./components/Auth/Register";
+import { AuthContextProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/Auth/ProtectRoute";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <AppLayout />,
+    element: <App />,
+  },
+  {
+    path: "/register",
+    element: <RegisterForm />,
+  },
+  {
+    path: "/",
+    element: (
+      <ProtectedRoute>
+        <AppLayout />
+      </ProtectedRoute>
+    ),
     children: [
       {
-        path: "/",
+        path: "/dashboard",
         element: <Dashboard />,
       },
       {
@@ -38,8 +53,8 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <RouterProvider router={router}>
-      <App />
-    </RouterProvider>
+    <AuthContextProvider>
+      <RouterProvider router={router}></RouterProvider>
+    </AuthContextProvider>
   </StrictMode>
 );
