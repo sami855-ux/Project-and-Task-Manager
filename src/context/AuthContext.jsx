@@ -117,6 +117,33 @@ export const AuthContextProvider = ({ children }) => {
     }
   };
 
+  //Create a project
+  const createProject = async (title, description, due_date, color, tags) => {
+    try {
+      const { data, error } = await supabase.from("projects").insert([
+        {
+          title,
+          description,
+          due_date,
+          color,
+          tags,
+          user_id: session.user.id,
+        },
+      ]);
+
+      if (error) {
+        console.log("Error creating project:", error.message);
+        return { error: error.message, success: false };
+      }
+
+      return { data, success: true };
+    } catch (error) {
+      console.log("Error creating project:", error.message);
+
+      return { error: error.message, success: false };
+    }
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -146,6 +173,7 @@ export const AuthContextProvider = ({ children }) => {
         signInUser,
         signInWithGoogle,
         signInWithGitHub,
+        createProject,
       }}
     >
       {children}
