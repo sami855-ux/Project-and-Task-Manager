@@ -61,6 +61,38 @@ export const AuthContextProvider = ({ children }) => {
     }
   };
 
+  //Signin with Google
+  const signInWithGoogle = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: "http://localhost:5173/dashboard",
+      },
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  };
+
+  //signin with github
+  const signInWithGitHub = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "github",
+      options: {
+        redirectTo: "http://localhost:5173/dashboard",
+      },
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -79,7 +111,14 @@ export const AuthContextProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ session, signupNewUser, signOut, signInUser }}
+      value={{
+        session,
+        signupNewUser,
+        signOut,
+        signInUser,
+        signInWithGoogle,
+        signInWithGitHub,
+      }}
     >
       {children}
     </AuthContext.Provider>
