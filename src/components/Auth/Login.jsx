@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { GoogleIcon } from "@/utils/GoogleIcon";
+import { GithubIcon } from "@/utils/GithubIcon";
 
 const LoginForm = () => {
   const naviagte = useNavigate();
@@ -219,20 +221,24 @@ const LoginForm = () => {
                 type="button"
                 onClick={handleGoogleLogin}
                 disabled={isLoading}
-                className="border-2 border-gray-200 hover:bg-gray-200 hover:border-gray-200 hover:text-gray-800 cursor-pointer transition-all duration-300 py-3"
+                className="border-2 cursor-pointer border-gray-200 hover:border-red-200 hover:bg-red-50 transition-all duration-300 py-3 group"
               >
-                <Chrome className="mr-2 h-5 w-5 text-red-500" />
-                <span className="font-medium">Google</span>
+                <GoogleIcon className="mr-2 h-5 w-5" />
+                <span className="font-medium text-gray-700 group-hover:text-red-700">
+                  Google
+                </span>
               </Button>
               <Button
                 variant="outline"
                 type="button"
                 onClick={handleGithubLogin}
                 disabled={isLoading}
-                className="border-2 border-gray-200 hover:bg-gray-200 hover:border-gray-200 hover:text-gray-800 cursor-pointer  transition-all duration-300 py-3"
+                className="border-2 cursor-pointer border-gray-200 hover:border-gray-800 hover:bg-gray-900 transition-all duration-300 py-3 group"
               >
-                <Github className="mr-2 h-5 w-5 text-gray-800" />
-                <span className="font-medium">GitHub</span>
+                <GithubIcon className="mr-2 h-5 w-5" />
+                <span className="font-medium text-gray-700 group-hover:text-white">
+                  GitHub
+                </span>
               </Button>
             </div>
 
