@@ -29,7 +29,7 @@ const LoginForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const { session, signInUser } = useAuth();
+  const { signInUser, signInWithGoogle, signInWithGitHub } = useAuth();
 
   const {
     register,
@@ -57,12 +57,28 @@ const LoginForm = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    console.log("Google login");
+  const handleGoogleLogin = async () => {
+    try {
+      const res = await signInWithGoogle();
+
+      if (res.success) {
+        // naviagte("/dashboard");
+      }
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+    }
   };
 
-  const handleGithubLogin = () => {
-    console.log("GitHub login");
+  const handleGithubLogin = async () => {
+    try {
+      const res = await signInWithGitHub();
+
+      if (res.success) {
+        // naviagte("/dashboard");
+      }
+    } catch (error) {
+      console.log("GitHub sign-in error:", error);
+    }
   };
 
   return (
