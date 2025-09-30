@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import {
   Search,
   Bell,
@@ -32,23 +32,31 @@ import { useAuth } from "@/context/AuthContext";
 const Header = () => {
   const naviagte = useNavigate();
 
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(
+    () =>
+      localStorage.getItem("theme") === "dark" ||
+      (window.matchMedia("(prefers-color-scheme: dark)").matches &&
+        !localStorage.getItem("theme"))
+  );
   const [notifications] = useState(3);
 
   const { session, signOut } = useAuth();
-
-  const user = {
-    name: "Sam Wilson",
-    email: "sam@example.com",
-    avatar: "/avatars/sam.jpg",
-    role: "Developer",
-  };
 
   const handleSignOut = async () => {
     await signOut();
 
     naviagte("/");
   };
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [isDarkMode]);
 
   return (
     <header className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-gray-200 fixed z-40 w-full ">
@@ -57,7 +65,7 @@ const Header = () => {
           {/* Left Section - Logo & Navigation */}
           <div className="flex items-center space-x-7 lg:space-x-9">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-2">
+            <Link to="/dashboard" className="flex items-center space-x-2">
               <FolderKanban className="w-8 h-8 text-blue-500" />
               <span className="font-bold font-mozilla text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 WorkNest
@@ -185,16 +193,19 @@ const Header = () => {
                   className="flex items-center space-x-2 px-2 hover:bg-transparent cursor-pointer"
                 >
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarImage
+                      src={session?.user.user_metadata.avatar}
+                      alt={session?.user.user_metadata.username}
+                    />
                     <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-mozilla">
                       {`${session?.user.user_metadata.username}`
                         .slice(0, 2)
-                        .toUpperCase() || user.name.slice(0, 2).toUpperCase()}
+                        .toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="hidden lg:block text-left">
                     <p className="text-sm font-medium font-mozilla capitalize ">
-                      {session?.user.user_metadata.username || user.name}
+                      {session?.user.user_metadata.username}
                     </p>
                   </div>
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -204,7 +215,7 @@ const Header = () => {
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium font-geist capitalize">
-                      {session?.user.user_metadata.username || user.name}
+                      {session?.user.user_metadata.username}
                     </p>
                     <p className="text-xs text-muted-foreground font-geist">
                       {session?.user?.email}
