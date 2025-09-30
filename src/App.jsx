@@ -1,9 +1,9 @@
-import LoginForm from "./components/Login";
+import LoginForm from "./components/Auth/Login";
 
 export default function App() {
   return (
     <div className="font-geist">
-     <LoginForm/>
+      <LoginForm />
     </div>
-  )
+  );
 }
