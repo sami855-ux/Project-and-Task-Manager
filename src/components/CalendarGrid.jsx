@@ -1,278 +1,605 @@
 // src/components/calendar/CalendarGrid.jsx
-import React from 'react';
-import { DayPicker } from 'react-day-picker';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { ArrowLeft, ArrowRight, Zap, Target, Flag, Calendar } from 'lucide-react';
+import React, { useState, useMemo } from "react";
+import { Calendar, momentLocalizer } from "react-big-calendar";
+import moment from "moment";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Search,
+  Menu,
+  Zap,
+  Flag,
+  Calendar as CalendarIcon,
+} from "lucide-react";
+import "react-big-calendar/lib/css/react-big-calendar.css";
 
-export const CalendarGrid = ({ 
-  view, 
-  selectedDate, 
-  onDateSelect, 
-  tasks, 
-  milestones, 
-  onTaskClick 
-}) => {
-  // Fix modifiers - ensure dates are valid
-  const modifiers = {
-    hasTasks: tasks.map(task => new Date(task.dueDate)).filter(date => !isNaN(date.getTime())),
-    hasMilestones: milestones.map(milestone => new Date(milestone.date)).filter(date => !isNaN(date.getTime())),
-    highPriority: tasks.filter(t => t.priority === 'high')
-                      .map(t => new Date(t.dueDate))
-                      .filter(date => !isNaN(date.getTime())),
-    today: new Date(),
-  };
+const localizer = momentLocalizer(moment);
 
-  const modifiersStyles = {
-    hasTasks: {
-      position: 'relative',
-      '&::after': {
-        content: '""',
-        position: 'absolute',
-        bottom: '4px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: '6px',
-        height: '6px',
-        borderRadius: '50%',
-        backgroundColor: '#3b82f6',
-      }
-    },
-    hasMilestones: {
-      border: '2px solid #8b5cf6',
-      backgroundColor: '#faf5ff',
-    },
-    highPriority: {
-      backgroundColor: '#fef2f2',
-      border: '1px solid #fecaca',
-    },
-    today: {
-      backgroundColor: '#dbeafe',
-      border: '2px solid #3b82f6',
-      fontWeight: 'bold',
-    },
-    selected: {
-      backgroundColor: '#3b82f6',
-      color: 'white',
-    }
-  };
+// Mock data
+const mockTasks = [
+  {
+    id: 1,
+    title: "Team Meeting",
+    dueDate: new Date(2024, 0, 15, 10, 0),
+    priority: "high",
+    category: "work",
+    description: "Weekly team sync",
+  },
+  {
+    id: 2,
+    title: "Project Deadline",
+    dueDate: new Date(2024, 0, 20, 17, 0),
+    priority: "high",
+    category: "work",
+    description: "Submit final deliverables",
+  },
+  {
+    id: 3,
+    title: "Dentist Appointment",
+    dueDate: new Date(2024, 0, 12, 14, 30),
+    priority: "medium",
+    category: "personal",
+    description: "Regular checkup",
+  },
+  {
+    id: 4,
+    title: "Birthday Party",
+    dueDate: new Date(2024, 0, 18, 19, 0),
+    priority: "low",
+    category: "personal",
+    description: "John's birthday celebration",
+  },
+  {
+    id: 5,
+    title: "Client Presentation",
+    dueDate: new Date(2024, 0, 22, 9, 0),
+    priority: "high",
+    category: "work",
+    description: "Quarterly review with client",
+  },
+];
 
-  // Custom caption component with navigation
-  const Caption = ({ displayMonth }) => {
-    const nextMonth = new Date(displayMonth);
-    nextMonth.setMonth(displayMonth.getMonth() + 1);
-    
-    const prevMonth = new Date(displayMonth);
-    prevMonth.setMonth(displayMonth.getMonth() - 1);
+const mockMilestones = [
+  {
+    id: 1,
+    title: "Project Kickoff",
+    date: new Date(2024, 0, 10),
+    category: "work",
+  },
+  {
+    id: 2,
+    title: "Vacation Start",
+    date: new Date(2024, 0, 25),
+    category: "personal",
+  },
+  {
+    id: 3,
+    title: "Product Launch",
+    date: new Date(2024, 0, 28),
+    category: "work",
+  },
+];
+
+export const CalendarGrid = () => {
+  const [currentDate, setCurrentDate] = useState(new Date(2024, 0, 15));
+  const [calendarView, setCalendarView] = useState("month");
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showSidebar, setShowSidebar] = useState(false);
+
+  // Convert tasks and milestones to events
+  const events = useMemo(() => {
+    const taskEvents = mockTasks.map((task) => ({
+      id: `task-${task.id}`,
+      title: task.title,
+      start: new Date(task.dueDate),
+      end: new Date(new Date(task.dueDate).getTime() + 60 * 60 * 1000), // 1 hour duration
+      allDay: false,
+      resource: task,
+      type: "task",
+      priority: task.priority,
+      category: task.category,
+    }));
+
+    const milestoneEvents = mockMilestones.map((milestone) => ({
+      id: `milestone-${milestone.id}`,
+      title: milestone.title,
+      start: new Date(milestone.date),
+      end: new Date(milestone.date),
+      allDay: true,
+      resource: milestone,
+      type: "milestone",
+      category: milestone.category,
+    }));
+
+    return [...taskEvents, ...milestoneEvents];
+  }, []);
+
+  // Google Calendar-like event component
+  const EventComponent = ({ event }) => {
+    const isTask = event.type === "task";
+    const isMilestone = event.type === "milestone";
+    const isHighPriority = event.priority === "high";
+    const isWork = event.category === "work";
+    const isPersonal = event.category === "personal";
+
+    const getEventColor = () => {
+      if (isMilestone) return "#8b5cf6"; // Purple for milestones
+      if (isHighPriority) return "#dc2626"; // Red for high priority
+      if (isWork) return "#3b82f6"; // Blue for work
+      if (isPersonal) return "#10b981"; // Green for personal
+      return "#6b7280"; // Gray default
+    };
 
     return (
-      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-gray-50 to-blue-50/30 rounded-t-lg border-b">
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => onDateSelect(prevMonth)}
-          className="hover:bg-blue-100"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
-        
-        <h2 className="font-semibold text-gray-900 text-lg">
-          {displayMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-        </h2>
-        
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => onDateSelect(nextMonth)}
-          className="hover:bg-blue-100"
-        >
-          <ArrowRight className="w-4 h-4" />
-        </Button>
-      </div>
-    );
-  };
-
-  // Custom day component
-  const CustomDay = ({ date, modifiers }) => {
-    const dayTasks = tasks.filter(task => {
-      const taskDate = new Date(task.dueDate);
-      return true;
-    });
-
-    const dayMilestones = milestones.filter(milestone => {
-      const milestoneDate = new Date(milestone.date);
-      return true;
-    });
-
-    return (
-      <button
-        onClick={() => onDateSelect(date)}
+      <div
         className={`
-          relative w-full h-14 rounded-lg transition-all duration-200 
-          border-2 flex flex-col items-center justify-center
-          hover:shadow-md hover:scale-105
-          ${modifiers.selected ? 'bg-blue-500 text-white border-blue-600 shadow-lg' : ''}
-          ${modifiers.today ? 'border-blue-300 bg-blue-50 text-blue-900' : 'border-transparent'}
-          ${modifiers.hasMilestones ? 'border-purple-300 bg-purple-50' : ''}
-          ${modifiers.highPriority ? 'bg-red-50 border-red-200' : ''}
-          ${!modifiers.selected && !modifiers.today ? 'hover:bg-gray-50' : ''}
+          w-full h-full px-2 py-1 text-xs rounded-sm border-l-2
+          ${isMilestone ? "font-semibold" : ""}
         `}
+        style={{
+          backgroundColor: `${getEventColor()}15`,
+          borderLeftColor: getEventColor(),
+          color: "#1f2937",
+        }}
       >
-        {/* Date Number - FIXED: This was commented out! */}
-        <span className={`
-          text-sm font-medium
-          ${modifiers.selected ? 'text-white' : 
-            modifiers.today ? 'text-blue-900 font-bold' : 
-            'text-gray-900'}
-        `}>
-          {/* {date.getDate()} */}
-        </span>
-
-        {/* Task Indicators */}
-        <div className="flex items-center justify-center space-x-1 mt-1">
-          {dayTasks.length > 0 && (
-            <div className="flex items-center space-x-1">
-              {dayTasks.some(t => t.priority === 'high') && (
-                <Zap className="w-3 h-3 text-red-500" />
-              )}
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            </div>
+        <div className="flex items-center space-x-1">
+          {!event.allDay && (
+            <span className="text-xs opacity-75">
+              {moment(event.start).format("HH:mm")}
+            </span>
           )}
-          
-          {dayMilestones.length > 0 && (
-            <Flag className="w-3 h-3 text-purple-500" />
-          )}
+          <span className="font-medium truncate flex-1">{event.title}</span>
         </div>
-
-        {/* Task Count Badge */}
-        {dayTasks.length > 0 && (
-          <div className={`
-            absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold
-            flex items-center justify-center
-            ${modifiers.selected ? 'bg-white text-blue-600' : 'bg-blue-500 text-white'}
-          `}>
-            {dayTasks.length}
+        {event.resource.description && (
+          <div className="text-xs opacity-75 truncate mt-1">
+            {event.resource.description}
           </div>
         )}
-      </button>
+      </div>
     );
   };
 
+  // Google-style toolbar
+  const CustomToolbar = ({ label, onNavigate, onView }) => {
+    return (
+      <div className="flex items-center justify-between py-4 border-b">
+        {/* Left section */}
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            // onClick={() => setShowSidebar(!showSidebar)}
+            className="hover:bg-gray-100 rounded-full"
+          >
+            <Menu className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Center section */}
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+            <Button
+              variant={calendarView === "month" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => onView("month")}
+              className={`rounded-md ${
+                calendarView === "month"
+                  ? "bg-white shadow-sm text-gray-900"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Month
+            </Button>
+            <Button
+              variant={calendarView === "week" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => onView("week")}
+              className={`rounded-md ${
+                calendarView === "week"
+                  ? "bg-white shadow-sm text-gray-900"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Week
+            </Button>
+            <Button
+              variant={calendarView === "day" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => onView("day")}
+              className={`rounded-md ${
+                calendarView === "day"
+                  ? "bg-white shadow-sm text-gray-900"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Day
+            </Button>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onNavigate("PREV")}
+              className="hover:bg-gray-100 rounded-full"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              onClick={() => onNavigate("TODAY")}
+              className="hover:bg-gray-100 rounded-md text-gray-700"
+            >
+              Today
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onNavigate("NEXT")}
+              className="hover:bg-gray-100 rounded-full"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          </div>
+
+          <h2 className="text-base text-gray-900 min-w-32">{label}</h2>
+        </div>
+
+        {/* Right section */}
+        <div className="flex items-center space-x-2">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search"
+              className="pl-10 pr-4 py-2 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Handle event selection
+  const handleSelectEvent = (event) => {
+    console.log("Event selected:", event);
+    setSelectedDate(event.start);
+  };
+
+  // Handle slot selection (date click)
+  const handleSelectSlot = ({ start }) => {
+    setSelectedDate(start);
+  };
+
+  // Sidebar component
+
   return (
-    <div className="relative bg-white rounded-lg shadow-lg border">
-      <DayPicker
-        mode="single"
-        selected={selectedDate}
-        onSelect={onDateSelect}
-        modifiers={modifiers}
-        modifiersStyles={modifiersStyles}
-        className="p-4"
-        showOutsideDays
-        fixedWeeks
-        components={{
-          Caption,
-          Day: CustomDay
-        }}
-        styles={{
-          root: {
-            width: '100%',
-            maxWidth: '100%'
-          },
-          months: {
-            display: 'flex',
-            justifyContent: 'center'
-          },
-          month: {
-            width: '100%'
-          },
-          table: {
-            width: '100%',
-            borderCollapse: 'collapse'
-          },
-          head: {
-            borderBottom: '1px solid #e5e7eb'
-          },
-          head_row: {
-            height: '3rem'
-          },
-          head_cell: {
-            textAlign: 'center',
-            fontWeight: '600',
-            color: '#6b7280',
-            textTransform: 'uppercase',
-            fontSize: '0.75rem',
-            padding: '0.5rem'
-          },
-          tbody: {
-            border: '1px solid #e5e7eb'
-          },
-          row: {
-            height: '5rem'
-          },
-          cell: {
-            textAlign: 'center',
-            padding: '0.25rem',
-            border: '1px solid #f3f4f6'
-          }
-        }}
-      />
-      
-      {/* Enhanced Legend */}
-      <div className="flex items-center justify-center space-x-6 mt-6 p-4 bg-gray-50 rounded-lg border">
-        <div className="flex items-center space-x-2 text-sm text-gray-700">
-          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-          <span>Tasks</span>
-          <Badge variant="secondary" className="ml-1 bg-blue-100 text-blue-700">
-            {tasks.length}
-          </Badge>
-        </div>
-        
-        <div className="flex items-center space-x-2 text-sm text-gray-700">
-          <Zap className="w-4 h-4 text-red-500" />
-          <span>High Priority</span>
-        </div>
-        
-        <div className="flex items-center space-x-2 text-sm text-gray-700">
-          <Flag className="w-4 h-4 text-purple-500" />
-          <span>Milestones</span>
-          <Badge variant="secondary" className="ml-1 bg-purple-100 text-purple-700">
-            {milestones.length}
-          </Badge>
-        </div>
-        
-        <div className="flex items-center space-x-2 text-sm text-gray-700">
-          <div className="w-3 h-3 bg-blue-300 rounded-full"></div>
-          <span>Today</span>
-        </div>
+    <div className="flex h-screen bg-white">
+      {/* Main Calendar */}
+      <div className="flex-1 flex flex-col">
+        <Calendar
+          localizer={localizer}
+          events={events}
+          date={currentDate}
+          view={calendarView}
+          onView={setCalendarView}
+          onNavigate={setCurrentDate}
+          onSelectEvent={handleSelectEvent}
+          onSelectSlot={handleSelectSlot}
+          selectable
+          components={{
+            toolbar: CustomToolbar,
+            event: EventComponent,
+          }}
+          eventPropGetter={(event) => {
+            const isTask = event.type === "task";
+            const isMilestone = event.type === "milestone";
+            const isHighPriority = event.priority === "high";
+            const isWork = event.category === "work";
+            const isPersonal = event.category === "personal";
+
+            let className = "";
+            if (isMilestone) {
+              className = "event-milestone";
+            } else if (isHighPriority) {
+              className = "event-high-priority";
+            } else if (isWork) {
+              className = "event-work";
+            } else if (isPersonal) {
+              className = "event-personal";
+            }
+
+            return {
+              className,
+              style: {
+                border: "none",
+                borderRadius: "6px",
+                padding: "2px 4px",
+              },
+            };
+          }}
+          dayPropGetter={(date) => {
+            const isToday = moment(date).isSame(moment(), "day");
+            const isSelected = moment(selectedDate).isSame(date, "day");
+
+            return {
+              className: `rbc-day ${isToday ? "rbc-day-today" : ""} ${
+                isSelected ? "rbc-day-selected" : ""
+              }`,
+            };
+          }}
+          views={["month", "week", "day"]}
+          step={60}
+          showMultiDayTimes
+          style={{
+            height: "100%",
+            flex: 1,
+          }}
+        />
       </div>
 
-      {/* Selected Date Summary */}
-      <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border">
-        <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
-          <Calendar className="w-4 h-4 mr-2 text-blue-500" />
-          {selectedDate.toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}
-        </h3>
-        
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-gray-600">Tasks: </span>
-            <span className="font-semibold text-blue-600">
-              {/* {tasks.filter(t => new Date(t.dueDate).toDateString() === selectedDate.toDateString()).length} */}
-            </span>
-          </div>
-          <div>
-            <span className="text-gray-600">Milestones: </span>
-            <span className="font-semibold text-purple-600">
-              {/* {milestones.filter(m => new Date(m.date).toDateString() === selectedDate.toDateString()).length} */}
-            </span>
-          </div>
-        </div>
-      </div>
+      {/* Global Styles */}
+      <style jsx>{`
+        :global(.rbc-header) {
+          padding: 12px 8px;
+          font-weight: 500;
+          font-size: 11px;
+          color: #6b7280;
+          text-transform: uppercase;
+          border-bottom: 1px solid #d1d5db;
+          background: white;
+        }
+
+        :global(.rbc-month-view) {
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        :global(.rbc-day-selected) {
+          background-color: #eff6ff !important;
+          border: 2px solid #3b82f6 !important;
+        }
+
+        :global(.rbc-day-slot .rbc-selected-cell) {
+          background-color: #eff6ff;
+        }
+
+        :global(.rbc-day-bg) {
+          border-right: 1px solid #d1d5db;
+          border-bottom: 1px solid #d1d5db;
+          transition: background-color 0.2s ease;
+        }
+
+        :global(.rbc-day-bg:hover) {
+          background-color: #f9fafb;
+        }
+
+        :global(.rbc-month-row) {
+          border-bottom: 1px solid #d1d5db;
+        }
+
+        :global(.rbc-date-cell) {
+          text-align: center;
+          padding: 8px 4px;
+          font-size: 14px;
+          font-weight: 500;
+        }
+
+        :global(.rbc-date-cell.rbc-now) {
+          font-weight: bold;
+        }
+
+        :global(.rbc-date-cell.rbc-now .rbc-button-link) {
+          background: #3b82f6;
+          color: white;
+          border-radius: 50%;
+          width: 28px;
+          height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto;
+        }
+
+        :global(.rbc-day-today) {
+          background-color: #eff6ff !important;
+        }
+
+        :global(.rbc-off-range-bg) {
+          background-color: #f8fafc;
+        }
+
+        :global(.rbc-off-range) {
+          color: #9ca3af;
+        }
+
+        :global(.rbc-event) {
+          border: none;
+          border-radius: 6px;
+          margin: 1px 4px;
+          min-height: 24px;
+          box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+          transition: all 0.2s ease;
+          border-left: 4px solid;
+        }
+
+        :global(.rbc-event:hover) {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        :global(.rbc-event:focus) {
+          outline: 2px solid #3b82f6;
+          outline-offset: 2px;
+        }
+
+        :global(.rbc-timeslot-group) {
+          border-bottom: 1px solid #d1d5db;
+        }
+
+        :global(.rbc-time-view) {
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        :global(.rbc-time-header) {
+          border-bottom: 1px solid #d1d5db;
+        }
+
+        :global(.rbc-time-content) {
+          border-top: 1px solid #d1d5db;
+        }
+
+        :global(.rbc-time-header-content) {
+          border-left: 1px solid #d1d5db;
+        }
+
+        :global(.rbc-time-gutter) {
+          border-right: 1px solid #d1d5db;
+          background: #f9fafb;
+        }
+
+        :global(.rbc-time-gutter .rbc-timeslot-group) {
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        :global(.rbc-day-slot .rbc-timeslot-group) {
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        :global(.rbc-timeslot-group:last-child) {
+          border-bottom: none;
+        }
+
+        :global(.rbc-allday-cell) {
+          border-bottom: 1px solid #d1d5db;
+          background: #f9fafb;
+        }
+
+        :global(.rbc-row-bg) {
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        :global(.rbc-row-bg .rbc-day-bg) {
+          border-bottom: none;
+        }
+
+        /* Custom scrollbar for calendar */
+        :global(.rbc-time-content) {
+          scrollbar-width: thin;
+          scrollbar-color: #d1d5db transparent;
+        }
+
+        :global(.rbc-time-content::-webkit-scrollbar) {
+          width: 6px;
+        }
+
+        :global(.rbc-time-content::-webkit-scrollbar-track) {
+          background: #f1f5f9;
+        }
+
+        :global(.rbc-time-content::-webkit-scrollbar-thumb) {
+          background: #d1d5db;
+          border-radius: 3px;
+        }
+
+        :global(.rbc-time-content::-webkit-scrollbar-thumb:hover) {
+          background: #9ca3af;
+        }
+
+        /* Event color variants */
+        :global(.event-work) {
+          border-left-color: #3b82f6;
+          background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+          color: #1e40af;
+        }
+
+        :global(.event-personal) {
+          border-left-color: #10b981;
+          background: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%);
+          color: #065f46;
+        }
+
+        :global(.rbc-toolbar) {
+          border-top: 3px solid #3b82f6 !important; /* Blue top border */
+          border-left: 1px solid #d1d5db;
+          border-right: 1px solid #d1d5db;
+          border-bottom: none;
+          background: white;
+          padding: 16px 20px;
+          margin: 0;
+        }
+
+        :global(.rbc-toolbar .rbc-toolbar-label) {
+          font-size: 1.5rem !important; /* Larger month/year text */
+          font-weight: 600;
+          color: #1f2937;
+        }
+
+        /* Or if you want to target your CustomToolbar specifically */
+        :global(.custom-toolbar) {
+          border-top: 3px solid #3b82f6;
+          border-radius: 8px 8px 0 0;
+        }
+
+        :global(.event-high-priority) {
+          border-left-color: #dc2626;
+          background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%);
+          color: #991b1b;
+        }
+
+        :global(.event-milestone) {
+          border-left-color: #8b5cf6;
+          background: linear-gradient(135deg, #ede9fe 0%, #faf5ff 100%);
+          color: #5b21b6;
+          font-weight: 600;
+        }
+
+        /* Month view event adjustments */
+        :global(.rbc-month-view .rbc-event) {
+          padding: 2px 6px;
+          font-size: 12px;
+          margin: 1px 2px;
+        }
+
+        /* Week and Day view event adjustments */
+        :global(.rbc-time-view .rbc-event) {
+          padding: 4px 8px;
+          font-size: 13px;
+          margin: 1px 3px;
+        }
+
+        /* Selected date state */
+        :global(.rbc-day-slot .rbc-selected-cell) {
+          background-color: #eff6ff;
+        }
+
+        /* Current time indicator */
+        :global(.rbc-current-time-indicator) {
+          background-color: #ef4444;
+          height: 2px;
+        }
+
+        :global(.rbc-current-time-indicator::before) {
+          background-color: #ef4444;
+          border-radius: 50%;
+          content: "";
+          height: 8px;
+          width: 8px;
+          position: absolute;
+          top: -3px;
+          left: -4px;
+        }
+      `}</style>
     </div>
   );
 };
